@@ -1,0 +1,201 @@
+@import 'tailwindcss';
+
+/* =========================================================================
+   XE6-07 — "The Maker's Console"
+   A warm, precise control surface that makes the 3D-printing pipeline
+   legible, reversible, and confirmable for beginners.
+   ========================================================================= */
+
+@theme {
+  /* --- Canvas & ink ------------------------------------------------------ */
+  --color-canvas: #e8e6e1;      /* warm graphite-grey paper */
+  --color-surface: #f4f2ee;     /* raised card */
+  --color-surface-2: #fbfaf7;   /* highest surface */
+  --color-ink: #1a1815;         /* near-black graphite */
+  --color-ink-2: #4a453e;       /* secondary text */
+  --color-ink-3: #837c70;       /* muted / captions */
+  --color-line: #d6d2ca;        /* hairline */
+  --color-line-2: #c4bfb4;      /* stronger divider */
+
+  /* --- Signature: molten coral (the hot extrusion) ---------------------- */
+  --color-coral: #e8552f;
+  --color-coral-deep: #c23c19;
+  --color-coral-soft: #f6d9cd;
+
+  /* --- Audit triad (semantic, separate hue family) ---------------------- */
+  --color-jade: #3f8f6e;        /* pass */
+  --color-jade-soft: #d6e8df;
+  --color-amber: #c8871e;       /* warn */
+  --color-amber-soft: #f2e4c8;
+  --color-brick: #b23121;       /* block */
+  --color-brick-soft: #f0d4cf;
+
+  /* --- Cool machine ink (device / data) --------------------------------- */
+  --color-steel: #3d6a8f;
+  --color-steel-soft: #d4e0ea;
+
+  /* --- Type -------------------------------------------------------------- */
+  --font-display: 'Space Grotesk', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-body: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'PingFang SC', monospace;
+
+  /* --- Radii & motion ---------------------------------------------------- */
+  --radius-card: 4px;
+  --radius-pill: 999px;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.55;
+    /* faint layer-line texture — the "printed" substrate */
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 3px,
+      rgba(26, 24, 21, 0.014) 3px,
+      rgba(26, 24, 21, 0.014) 4px
+    );
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    margin: 0;
+  }
+
+  ::selection {
+    background: var(--color-coral);
+    color: #fff;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-coral);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-2);
+    border-radius: 999px;
+    border: 3px solid var(--color-canvas);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-3); }
+}
+
+@layer components {
+  /* Machine-data eyebrow — mono, tracked, used for labels that carry
+     technical meaning (states, ids, mm values). */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .card-raised {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 2px rgba(26, 24, 21, 0.04), 0 8px 24px -18px rgba(26, 24, 21, 0.25);
+  }
+
+  /* Primary action — the molten button. Boldness spent here + the rail. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 13.5px;
+    letter-spacing: -0.01em;
+    padding: 9px 16px;
+    border-radius: var(--radius-card);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+  }
+  .btn:active { transform: translateY(1px); }
+
+  .btn-primary {
+    background: var(--color-coral);
+    color: #fff;
+    box-shadow: inset 0 -2px 0 var(--color-coral-deep);
+  }
+  .btn-primary:hover { background: var(--color-coral-deep); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-ink);
+    border-color: var(--color-line-2);
+  }
+  .btn-ghost:hover { background: var(--color-surface-2); border-color: var(--color-ink-3); }
+
+  .btn-quiet {
+    background: transparent;
+    color: var(--color-ink-2);
+    padding: 6px 10px;
+  }
+  .btn-quiet:hover { color: var(--color-ink); background: rgba(26,24,21,0.04); }
+
+  /* Status pills — audit triad + neutral */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+  }
+  .pill-pass  { background: var(--color-jade-soft);  color: #235c45; }
+  .pill-warn  { background: var(--color-amber-soft); color: #8a5a0f; }
+  .pill-block { background: var(--color-brick-soft); color: #832014; }
+  .pill-neutral { background: var(--color-canvas); color: var(--color-ink-2); border: 1px solid var(--color-line); }
+  .pill-coral { background: var(--color-coral-soft); color: var(--color-coral-deep); }
+  .pill-steel { background: var(--color-steel-soft); color: #2a4d69; }
+
+  .dot { width: 7px; height: 7px; border-radius: 999px; flex: none; }
+}
+
+@layer utilities {
+  .font-display { font-family: var(--font-display); }
+  .font-mono { font-family: var(--font-mono); }
+  .tnum { font-variant-numeric: tabular-nums; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
