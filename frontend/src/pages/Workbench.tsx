@@ -8,10 +8,10 @@ import type { StageNode, StageState } from '@/data/types'
 import { HERO_PROJECT, PRINTERS } from '@/data/mock'
 import { cn } from '@/lib/cn'
 
-type FlowStatus = 'style_select' | 'image_review' | 'concept_select' | 'generating' | 'review' | 'refine_input' | 'refining' | 'final' | 'confirm_print' | 'queued'
-type ModelVersionId = 'v0' | 'v1' | 'v2'
+type FlowStatus = 'style_select' | 'image_setup' | 'image_generating' | 'image_review' | 'generating' | 'review' | 'refine_input' | 'refining' | 'final' | 'confirm_print' | 'queued'
+type ModelVersionId = 'v1' | 'v2'
 type ChatRole = 'user' | 'assistant'
-type PendingAiReply = 'style' | 'variants' | 'generation' | 'refine' | null
+type PendingAiReply = 'style' | 'images' | 'generation' | 'refine' | null
 
 interface DemoModelVersion {
   id: ModelVersionId
@@ -32,6 +32,23 @@ interface ExtraMessage {
   time: string
 }
 
+interface ImageGenerationRound {
+  id: string
+  prompt: string
+  count: number
+  time: string
+}
+
+interface GeneratedDesignImage {
+  id: string
+  roundId: string
+  label: string
+  note: string
+  colors: string[]
+  variant: number
+  conceptIndex: number
+}
+
 const STYLES = [
   { name: '未来机甲', note: '硬表面装甲、冷色灯带、战术切面', color: '#7468ef' },
   { name: '圆润潮玩', note: '亲和比例、软边曲面、收藏玩具质感', color: '#5abbdc' },
@@ -45,10 +62,12 @@ const CONCEPTS = [
   { id: 'A', name: '装甲先锋', note: '锐利头冠与外露装甲，战斗感最强', colors: ['#6256de', '#63c8f4', '#eef0ff'] },
   { id: 'B', name: '流光核心', note: '结构均衡、发光胸腔，适合桌面摆件', colors: ['#7567e8', '#75ddf0', '#eeeaff'] },
   { id: 'C', name: '模块幼龙', note: '比例更可爱、四足更稳，打印成功率更高', colors: ['#4f91df', '#74ddc7', '#ecf9ff'] },
+  { id: 'D', name: '星舰脊甲', note: '拉长背部装甲，强化飞行器与推进器语言', colors: ['#525fd4', '#60c9ee', '#f4f1ff'] },
+  { id: 'E', name: '晶核守卫', note: '突出透明能量核心与环形护甲结构', colors: ['#7860d9', '#70e2d4', '#f3edff'] },
+  { id: 'F', name: '轻型侦察龙', note: '减少厚重装甲，轮廓更轻快，细节更利于打印', colors: ['#477fd1', '#86d7ee', '#edf8ff'] },
 ]
 
 const MODEL_VERSIONS: DemoModelVersion[] = [
-  { id: 'v0', label: 'V0', name: 'AI 引导草模', note: '会话开始时的可旋转结构示意', color: '#9A91D7', score: 78, triangles: 21840, fileSize: '4.2 MB', createdAt: '14:21' },
   { id: 'v1', label: 'V1', name: '流光核心模型', note: 'B 版图片生成 · 当前方案', color: '#7567E8', score: 92, triangles: 68420, fileSize: '8.6 MB', createdAt: '14:28' },
   { id: 'v2', label: 'V2', name: '科技环优化模型', note: '圆润头部 · 加粗尾巴', color: '#55AFC5', score: 96, triangles: 76840, fileSize: '9.4 MB', createdAt: '14:34' },
 ]
@@ -63,8 +82,9 @@ const DEMO_SESSION = {
 
 const STATUS_META: Record<FlowStatus, { label: string; detail: string; tone: string }> = {
   style_select: { label: '等待用户选择风格', detail: 'AI 已理解主体和用途，正在等待用户选择推荐风格或输入自定义风格。', tone: 'pill-coral' },
-  image_review: { label: '等待确认概念图', detail: '首张 3D 风格预览已生成，用户可以接受、要求三版重绘或补充修改意见。', tone: 'pill-warn' },
-  concept_select: { label: '等待选择图片方案', detail: '三版差异化概念图已生成，选定一版后才会开始构建模型。', tone: 'pill-coral' },
+  image_setup: { label: '等待设置设计图', detail: '由用户决定本轮生成几张设计图，也可以先补充轮廓、配色和细节意见。', tone: 'pill-coral' },
+  image_generating: { label: '正在生成设计图', detail: 'AI 正在按用户选择的数量和补充意见生成设计图片。', tone: 'pill-steel' },
+  image_review: { label: '等待确认设计图', detail: '设计图已生成。用户可以选择其中一张生成模型，或继续提意见并追加新方案。', tone: 'pill-warn' },
   generating: { label: '正在生成 3D 模型', detail: '正在解析轮廓、建立结构并进行可打印性检测。', tone: 'pill-steel' },
   review: { label: '等待确认模型', detail: '模型已生成。确认打印或继续补充要求，系统不会自动开始打印。', tone: 'pill-warn' },
   refine_input: { label: '等待补充优化要求', detail: '请在当前模型下方描述需要调整的细节。', tone: 'pill-coral' },
@@ -75,6 +95,15 @@ const STATUS_META: Record<FlowStatus, { label: string; detail: string; tone: str
 }
 
 const timeNow = () => new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date())
+
+function extractImageCount(prompt: string) {
+  const arabicMatch = prompt.match(/(\d+)\s*张/)
+  if (arabicMatch) return Math.min(8, Math.max(1, Number(arabicMatch[1])))
+
+  const chineseCounts: Record<string, number> = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8 }
+  const chineseMatch = prompt.match(/([一二两三四五六七八])\s*张/)
+  return chineseMatch ? chineseCounts[chineseMatch[1]] : 1
+}
 
 export default function Workbench() {
   const nav = useNavigate()
@@ -87,12 +116,16 @@ export default function Workbench() {
   const [styleBatch, setStyleBatch] = useState(0)
   const [customStyle, setCustomStyle] = useState('')
   const [confirmedStyle, setConfirmedStyle] = useState('')
-  const [selectedConcept, setSelectedConcept] = useState(1)
+  const [imageRounds, setImageRounds] = useState<ImageGenerationRound[]>([])
+  const [pendingImageRoundId, setPendingImageRoundId] = useState('')
+  const [generatedImages, setGeneratedImages] = useState<GeneratedDesignImage[]>([])
+  const [selectedImageId, setSelectedImageId] = useState('')
+  const [modelSourceImageId, setModelSourceImageId] = useState('')
   const [status, setStatus] = useState<FlowStatus>('style_select')
   const [progress, setProgress] = useState(0)
   const [hasV1, setHasV1] = useState(false)
   const [hasV2, setHasV2] = useState(false)
-  const [activeModel, setActiveModel] = useState<ModelVersionId>('v0')
+  const [activeModel, setActiveModel] = useState<ModelVersionId>('v1')
   const [refineSource, setRefineSource] = useState<ModelVersionId>('v1')
   const [printTarget, setPrintTarget] = useState<ModelVersionId>('v1')
   const [refineText, setRefineText] = useState('头部更圆润一点，尾巴加粗，底座改成半透明的科技环。')
@@ -101,7 +134,6 @@ export default function Workbench() {
   const [composerText, setComposerText] = useState('')
   const [replying, setReplying] = useState(false)
   const [pendingAiReply, setPendingAiReply] = useState<PendingAiReply>(null)
-  const [variantRequested, setVariantRequested] = useState(false)
   const [generationRequested, setGenerationRequested] = useState(false)
 
   useEffect(() => () => {
@@ -139,18 +171,19 @@ export default function Workbench() {
   }, [status, extraMessages.length, replying])
 
   const availableModels = useMemo(
-    () => MODEL_VERSIONS.filter((model) => model.id === 'v0' || (model.id === 'v1' && hasV1) || (model.id === 'v2' && hasV2)),
+    () => MODEL_VERSIONS.filter((model) => (model.id === 'v1' && hasV1) || (model.id === 'v2' && hasV2)),
     [hasV1, hasV2],
   )
   const activeModelMeta = availableModels.find((model) => model.id === activeModel) ?? MODEL_VERSIONS[0]
-  const latestModel = hasV2 ? MODEL_VERSIONS[2] : hasV1 ? MODEL_VERSIONS[1] : MODEL_VERSIONS[0]
+  const latestModel = hasV2 ? MODEL_VERSIONS[1] : MODEL_VERSIONS[0]
   const printModel = MODEL_VERSIONS.find((model) => model.id === printTarget) ?? latestModel
+  const selectedImage = generatedImages.find((image) => image.id === selectedImageId) ?? generatedImages[0]
+  const modelSourceImage = generatedImages.find((image) => image.id === modelSourceImageId) ?? selectedImage
   const stages = useMemo(() => buildStages(status, hasV1, hasV2), [status, hasV1, hasV2])
   const statusMeta = STATUS_META[status]
-  const busy = status === 'generating' || status === 'refining' || replying || pendingAiReply !== null
+  const busy = status === 'image_generating' || status === 'generating' || status === 'refining' || replying || pendingAiReply !== null
   const hasStyleResult = Boolean(confirmedStyle)
-  const hasVariants = !['style_select', 'image_review'].includes(status)
-  const hasGeneration = !['style_select', 'image_review', 'concept_select'].includes(status)
+  const hasGeneration = !['style_select', 'image_setup', 'image_generating', 'image_review'].includes(status)
 
   const scheduleAiReply = (kind: Exclude<PendingAiReply, null>, action: () => void) => {
     if (busy) return
@@ -166,30 +199,56 @@ export default function Workbench() {
   const confirmRecommendedStyle = () => {
     if (busy) return
     setConfirmedStyle(STYLES[selectedStyle].name)
-    scheduleAiReply('style', () => setStatus('image_review'))
+    scheduleAiReply('style', () => setStatus('image_setup'))
   }
 
   const confirmCustomStyle = () => {
     const value = customStyle.trim()
     if (!value || busy) return
     setConfirmedStyle(value)
-    scheduleAiReply('style', () => setStatus('image_review'))
+    scheduleAiReply('style', () => setStatus('image_setup'))
   }
 
-  const requestVariants = () => {
+  const requestDesignImages = (prompt: string) => {
     if (busy) return
-    setVariantRequested(true)
-    scheduleAiReply('variants', () => setStatus('concept_select'))
+    const count = extractImageCount(prompt)
+    const roundId = `image-round-${Date.now()}`
+    setImageRounds((rounds) => [...rounds, { id: roundId, prompt, count, time: timeNow() }])
+    setPendingImageRoundId(roundId)
+    setStatus('image_generating')
+    scheduleAiReply('images', () => {
+      setGeneratedImages((current) => {
+        const additions = Array.from({ length: count }, (_, offset) => {
+          const sequence = current.length + offset
+          const conceptIndex = sequence % CONCEPTS.length
+          const concept = CONCEPTS[conceptIndex]
+          return {
+            id: `design-${sequence + 1}`,
+            roundId,
+            label: `${concept.id} · ${concept.name}`,
+            note: current.length === 0 && offset === 0 ? '首轮方向' : `第 ${sequence + 1} 张方案`,
+            colors: concept.colors,
+            variant: conceptIndex + 1,
+            conceptIndex,
+          }
+        })
+        setSelectedImageId(additions[0]?.id ?? current[0]?.id ?? '')
+        return [...current, ...additions]
+      })
+      setPendingImageRoundId('')
+      setStatus('image_review')
+    })
   }
 
   const startModelGeneration = () => {
-    if (busy) return
+    if (busy || !selectedImage) return
+    setModelSourceImageId(selectedImage.id)
     setGenerationRequested(true)
     scheduleAiReply('generation', () => {
       setSubmittedRefineText('')
       setHasV1(false)
       setHasV2(false)
-      setActiveModel('v0')
+      setActiveModel('v1')
       setStatus('generating')
     })
   }
@@ -216,9 +275,15 @@ export default function Workbench() {
   const sendComposerMessage = () => {
     const text = composerText.trim()
     if (!text || busy) return
+    setComposerText('')
+
+    if (status === 'image_setup' || status === 'image_review') {
+      requestDesignImages(text)
+      return
+    }
+
     const userMessage: ExtraMessage = { id: Date.now(), role: 'user', text, time: timeNow() }
     setExtraMessages((items) => [...items, userMessage])
-    setComposerText('')
     setReplying(true)
     window.setTimeout(() => {
       const reply = text.includes('风格')
@@ -261,9 +326,11 @@ export default function Workbench() {
           <span className="font-mono text-[10px] text-[var(--color-ink-3)]">{availableModels.length} 个版本</span>
         </div>
         <div className="mt-2.5 space-y-2">
-          {availableModels.map((model) => (
-            <ModelVersionItem key={model.id} label={`${model.label} · ${model.name}`} note={`${model.createdAt} · ${model.fileSize}`} color={model.color} active={activeModel === model.id} onClick={() => setActiveModel(model.id)} />
-          ))}
+          {hasV1
+            ? availableModels.map((model) => (
+                <ModelVersionItem key={model.id} label={`${model.label} · ${model.name}`} note={`${model.createdAt} · ${model.fileSize}`} color={model.color} active={activeModel === model.id} onClick={() => setActiveModel(model.id)} />
+              ))
+            : <ModelEmptyState compact />}
         </div>
         <button className="btn btn-ghost mt-3 w-full" onClick={() => nav('/projects')}>查看全部项目与模型</button>
       </aside>
@@ -303,37 +370,34 @@ export default function Workbench() {
                 <UserMessage time="14:21">我想要“{confirmedStyle}”，主色用蓝紫色，尺寸控制在 15 厘米左右。如果后面效果不对，我还会继续调整。</UserMessage>
                 {pendingAiReply === 'style'
                   ? <TypingMessage label="AI 正在理解风格并准备图片…" />
-                  : <AgentMessage time="14:21" badge="3D 图片预览" text="收到。下面是第一张造型预览，它只用于确认视觉方向，不会直接生成模型或自动打印。你可以接受，也可以让我重新生成三版，或者直接在输入框里补充修改意见。">
-                      <SingleConceptPreview />
-                      {status === 'image_review' && (
-                        <div className="mt-3 grid grid-cols-2 gap-2 max-[560px]:grid-cols-1">
-                          <button className="btn btn-primary" onClick={startModelGeneration}><SparkIcon />这版可以，生成模型</button>
-                          <button className="btn btn-ghost" onClick={requestVariants}>不够满意，重新生成 3 版</button>
-                        </div>
-                      )}
-                    </AgentMessage>}
+                  : <AgentMessage time="14:21" badge="设计图生成" text="收到。接下来直接告诉我希望生成的数量和调整要求，生成后再选择一张进入 3D 建模。" />}
               </>
             )}
 
-            {(variantRequested || hasVariants) && (
-              <>
-                <UserMessage time="14:23">第一版的轮廓太普通了，不够像真正的 3D 产品渲染。保留蓝紫色，再给我三版差异更大的方案。</UserMessage>
-                {pendingAiReply === 'variants'
-                  ? <TypingMessage label="AI 正在重新构思并生成 3 个方向…" />
-                  : <AgentMessage time="14:23" badge="3 版 3D 概念图" text="已保留机械龙、蓝紫配色与桌面摆件尺寸，并强化材质、灯光和空间感。三版分别偏战斗、均衡和可爱，你可以点击大图选择。">
-                      <ConceptGrid selected={selectedConcept} onSelect={setSelectedConcept} />
-                      {status === 'concept_select' && (
-                        <button className="btn btn-primary mt-3 w-full" onClick={startModelGeneration}>
-                          <SparkIcon />确定 {CONCEPTS[selectedConcept].id} 版并生成 3D 模型
-                        </button>
-                      )}
-                    </AgentMessage>}
-              </>
-            )}
+            {imageRounds.map((round, index) => {
+              const roundImages = generatedImages.filter((image) => image.roundId === round.id)
+              const isPendingRound = pendingAiReply === 'images' && pendingImageRoundId === round.id
+              const isLatestRound = index === imageRounds.length - 1
+              return (
+                <div key={round.id} className="contents">
+                  <UserMessage time={round.time}>{round.prompt}</UserMessage>
+                  {isPendingRound
+                    ? <TypingMessage label={`AI 正在按你的要求生成 ${round.count} 张设计图…`} />
+                    : roundImages.length > 0 && <AgentMessage time={round.time} badge={`AI 设计图片 · 本轮 ${roundImages.length} 张`} text={index === 0 ? '设计图已生成。请选择一张作为建模依据，确认后进入 3D 建模。' : '已根据新的要求追加设计图，之前生成的图片仍然保留。'}>
+                        <ConceptGallery images={roundImages} selectedId={selectedImage?.id ?? ''} onSelect={setSelectedImageId} />
+                        {isLatestRound && status === 'image_review' && (
+                          <button className="btn btn-primary mt-3 w-full" onClick={startModelGeneration} disabled={!selectedImage}>
+                            <SparkIcon />使用“{selectedImage?.label ?? '当前方案'}”生成 3D 模型
+                          </button>
+                        )}
+                      </AgentMessage>}
+                </div>
+              )
+            })}
 
             {(generationRequested || hasGeneration) && (
               <>
-                <UserMessage time="14:25">{variantRequested ? `我选择 ${CONCEPTS[selectedConcept].id} 版“${CONCEPTS[selectedConcept].name}”，继续生成可打印的 3D 模型。` : '第一张方向预览可以，就按这一版继续生成可打印的 3D 模型。'}</UserMessage>
+                <UserMessage time="14:25">我选择“{modelSourceImage?.label ?? '当前设计图'}”，继续生成可打印的 3D 模型。</UserMessage>
                 {pendingAiReply === 'generation'
                   ? <TypingMessage label="AI 正在分析图片结构，准备开始建模…" />
                   : <AgentMessage time="14:25" badge="模型生成进度" text={status === 'generating' ? '正在把二维概念图转换成可编辑、可打印的模型，并同步执行结构检测。' : '模型生成流程已完成，每一步都保留了状态记录。'}>
@@ -344,7 +408,7 @@ export default function Workbench() {
 
             {hasV1 && status !== 'generating' && (
               <AgentMessage time="14:28" badge="3D 模型结果" text="V1 已生成：聊天中展示模型结果，右上方模型版型区也已同步。右侧模型可以按住拖动旋转、滚轮缩放。只有你主动确认后，系统才会准备打印。">
-                <ModelResultCard version="V1" modelVersion="v1" color="#7567E8" selectedConcept={CONCEPTS[selectedConcept].name} compact={hasV2} onConfirm={() => requestPrint('v1')} onRefine={() => requestRefine('v1')} actions={status === 'review'} />
+                <ModelResultCard version="V1" modelVersion="v1" color="#7567E8" selectedConcept={modelSourceImage?.label ?? '已选设计图'} compact={hasV2} onConfirm={() => requestPrint('v1')} onRefine={() => requestRefine('v1')} actions={status === 'review'} />
                 {status === 'refine_input' && refineSource === 'v1' && <RefineComposer value={refineText} onChange={setRefineText} onSubmit={startRefining} />}
                 {status === 'confirm_print' && printTarget === 'v1' && <PrintConfirmCard printer={printer.name} version={printModel.label} onCancel={() => setStatus(hasV2 ? 'final' : 'review')} onConfirm={() => setStatus('queued')} />}
               </AgentMessage>
@@ -386,62 +450,81 @@ export default function Workbench() {
           </div>
         </div>
 
-        <GlobalComposer value={composerText} onChange={setComposerText} onSubmit={sendComposerMessage} disabled={busy} />
+        <GlobalComposer
+          value={composerText}
+          onChange={setComposerText}
+          onSubmit={sendComposerMessage}
+          disabled={busy}
+          placeholder={status === 'image_setup'
+            ? '例如：先生成 2 张，头部圆润一些，保留蓝紫配色'
+            : status === 'image_review'
+              ? '例如：再生成 1 张，尾巴加粗，减少尖锐结构'
+              : '继续和 AI 对话，例如：这些风格我都不喜欢…'}
+        />
       </section>
 
       <aside className="card-raised flex flex-col overflow-y-auto rounded-[22px] max-[1260px]:hidden">
         <div className="flex h-[58px] flex-none items-center justify-between border-b border-[var(--color-line)] bg-white/72 px-4">
           <div><div className="eyebrow">模型版型区</div><div className="mt-0.5 text-[12px] font-semibold">真实 3D 几何 · 支持拖动旋转</div></div>
-          <span className="pill pill-steel"><span className="dot" style={{ background: 'var(--color-steel)' }} />3D LIVE</span>
+          <span className={cn('pill', hasV1 ? 'pill-steel' : 'pill-neutral')}><span className="dot" style={{ background: hasV1 ? 'var(--color-steel)' : 'var(--color-ink-3)' }} />{hasV1 ? '3D LIVE' : '等待生成'}</span>
         </div>
         <div className="relative h-[330px] flex-none overflow-hidden border-b border-[var(--color-line)] bg-gradient-to-br from-[#f1efff] via-[#eef6ff] to-[#eafaff]">
-          <ModelViewer color={activeModelMeta.color} version={activeModel} />
-          <div className="pointer-events-none absolute left-3 top-3 pill pill-neutral">按住拖动旋转 · 滚轮缩放</div>
-          <div className="pointer-events-none absolute right-3 top-3 pill pill-coral">{activeModelMeta.label} · {activeModelMeta.score} 分</div>
-          <div className="pointer-events-none absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-[14px] border border-white/75 bg-white/76 px-3 py-2.5 shadow-sm backdrop-blur-xl">
-            <div><div className="text-[12px] font-semibold">{activeModelMeta.name}</div><div className="font-mono text-[9.5px] text-[var(--color-ink-3)]">{activeModelMeta.triangles.toLocaleString()} TRI · {activeModelMeta.fileSize} · {activeModelMeta.createdAt}</div></div>
-            <span className={cn('pill', statusMeta.tone)}>{statusMeta.label}</span>
-          </div>
+          {hasV1
+            ? <>
+                <ModelViewer color={activeModelMeta.color} version={activeModel} />
+                <div className="pointer-events-none absolute left-3 top-3 pill pill-neutral">按住拖动旋转 · 滚轮缩放</div>
+                <div className="pointer-events-none absolute right-3 top-3 pill pill-coral">{activeModelMeta.label} · {activeModelMeta.score} 分</div>
+                <div className="pointer-events-none absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-[14px] border border-white/75 bg-white/76 px-3 py-2.5 shadow-sm backdrop-blur-xl">
+                  <div><div className="text-[12px] font-semibold">{activeModelMeta.name}</div><div className="font-mono text-[9.5px] text-[var(--color-ink-3)]">{activeModelMeta.triangles.toLocaleString()} TRI · {activeModelMeta.fileSize} · {activeModelMeta.createdAt}</div></div>
+                  <span className={cn('pill', statusMeta.tone)}>{statusMeta.label}</span>
+                </div>
+              </>
+            : <ModelEmptyState />}
         </div>
 
         <div className="space-y-5 p-5">
-          <DesignImageRail selected={selectedConcept} onSelect={setSelectedConcept} />
+          <DesignImageRail images={generatedImages} selectedId={selectedImage?.id ?? ''} onSelect={setSelectedImageId} />
 
           <div>
             <div className="mb-2 flex items-center justify-between"><div className="eyebrow">我的模型</div><button className="text-[11px] font-medium text-[var(--color-coral-deep)]" onClick={() => nav('/projects')}>管理全部</button></div>
-            <div className="grid grid-cols-3 gap-2">
-              {availableModels.map((model) => <ModelLibraryCard key={model.id} label={model.label} note={model.name.replace('模型', '')} color={model.color} active={activeModel === model.id} onClick={() => setActiveModel(model.id)} />)}
-              {!hasV1 && <div className="grid min-h-[94px] place-items-center rounded-[15px] border border-dashed border-[var(--color-line-2)] bg-white/35 text-center text-[9.5px] text-[var(--color-ink-3)]">对话确认后<br />生成 V1</div>}
-              {hasV1 && !hasV2 && <div className="grid min-h-[94px] place-items-center rounded-[15px] border border-dashed border-[var(--color-line-2)] bg-white/35 text-center text-[9.5px] text-[var(--color-ink-3)]">优化后<br />生成 V2</div>}
-            </div>
-          </div>
-
-          <div>
-            <div className="eyebrow mb-2">模型尺寸 · MM</div>
-            <div className="grid grid-cols-3 gap-2.5">
-              {(['x', 'y', 'z'] as const).map((axis) => (
-                <div key={axis} className="rounded-[14px] border border-white bg-gradient-to-b from-white to-[#f4f5fb] p-2.5 text-center shadow-sm">
-                  <div className="font-mono text-[10px] uppercase text-[var(--color-ink-3)]">{axis}</div>
-                  <div className="font-display text-[19px] tnum">{activeModel === 'v0' ? Math.round(revision.meshStats.bboxMm[axis] * 0.94) : activeModel === 'v2' && axis === 'z' ? revision.meshStats.bboxMm[axis] + 4 : revision.meshStats.bboxMm[axis]}</div>
+            {hasV1
+              ? <div className="grid grid-cols-3 gap-2">
+                  {availableModels.map((model) => <ModelLibraryCard key={model.id} label={model.label} note={model.name.replace('模型', '')} color={model.color} active={activeModel === model.id} onClick={() => setActiveModel(model.id)} />)}
+                  {!hasV2 && <div className="grid min-h-[94px] place-items-center rounded-[15px] border border-dashed border-[var(--color-line-2)] bg-white/35 text-center text-[9.5px] text-[var(--color-ink-3)]">优化完成后<br />显示 V2</div>}
                 </div>
-              ))}
-            </div>
+              : <ModelEmptyState compact />}
           </div>
 
-          <div>
-            <div className="eyebrow mb-2">模型检测结果</div>
-            <div className="rounded-[16px] border border-white bg-white/65 px-3 shadow-sm">
-              <DataRow label="当前版本" value={activeModelMeta.label} />
-              <DataRow label="可打印评分" value={`${activeModelMeta.score} / 100`} />
-              <DataRow label="三角面" value={activeModelMeta.triangles.toLocaleString()} />
-              <DataRow label="水密 / 流形" value={hasV1 ? '是 / 是' : '待生成后检测'} />
-            </div>
-          </div>
+          {hasV1 && (
+            <>
+              <div>
+                <div className="eyebrow mb-2">模型尺寸 · MM</div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {(['x', 'y', 'z'] as const).map((axis) => (
+                    <div key={axis} className="rounded-[14px] border border-white bg-gradient-to-b from-white to-[#f4f5fb] p-2.5 text-center shadow-sm">
+                      <div className="font-mono text-[10px] uppercase text-[var(--color-ink-3)]">{axis}</div>
+                      <div className="font-display text-[19px] tnum">{activeModel === 'v2' && axis === 'z' ? revision.meshStats.bboxMm[axis] + 4 : revision.meshStats.bboxMm[axis]}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="eyebrow mb-2">模型检测结果</div>
+                <div className="rounded-[16px] border border-white bg-white/65 px-3 shadow-sm">
+                  <DataRow label="当前版本" value={activeModelMeta.label} />
+                  <DataRow label="可打印评分" value={`${activeModelMeta.score} / 100`} />
+                  <DataRow label="三角面" value={activeModelMeta.triangles.toLocaleString()} />
+                  <DataRow label="水密 / 流形" value="是 / 是" />
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="rounded-[16px] border border-white bg-gradient-to-br from-[#f3efff] via-white to-[#eaf8ff] p-3.5 shadow-sm">
             <div className="eyebrow mb-2">演示数据</div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10.5px]">
-              <DemoDatum label="会话" value={DEMO_SESSION.id} /><DemoDatum label="创建者" value={DEMO_SESSION.owner} /><DemoDatum label="图片任务" value={DEMO_SESSION.imageJob} /><DemoDatum label="模型任务" value={DEMO_SESSION.modelJob} />
+              <DemoDatum label="会话" value={DEMO_SESSION.id} /><DemoDatum label="创建者" value={DEMO_SESSION.owner} /><DemoDatum label="图片任务" value={generatedImages.length ? DEMO_SESSION.imageJob : '尚未生成'} /><DemoDatum label="模型任务" value={hasV1 ? DEMO_SESSION.modelJob : '尚未生成'} />
             </div>
           </div>
 
@@ -460,13 +543,13 @@ function buildStages(status: FlowStatus, hasV1: boolean, hasV2: boolean): StageN
   const isRefining = status === 'refining'
   const isQueued = status === 'queued'
   const styleDone = status !== 'style_select'
-  const imageDone = !['style_select', 'image_review', 'concept_select'].includes(status)
+  const imageDone = !['style_select', 'image_setup', 'image_generating', 'image_review'].includes(status)
   const stage = (done: boolean, active: boolean): StageState => done ? 'done' : active ? 'active' : 'pending'
 
   return [
     { stage: 'input', label: '描述需求', state: 'done', note: '用户：机械龙桌面摆件' },
     { stage: 'intent', label: 'AI 风格引导', state: stage(styleDone, status === 'style_select'), note: styleDone ? '已由用户确认风格' : '等待选择或自定义风格' },
-    { stage: 'generate', label: '图片方案选择', state: stage(imageDone, status === 'image_review' || status === 'concept_select'), note: status === 'concept_select' ? '等待用户选择三版之一' : imageDone ? '图片方向已确认' : '等待首图反馈' },
+    { stage: 'generate', label: '设计图片确认', state: stage(imageDone, status === 'image_setup' || status === 'image_generating' || status === 'image_review'), note: status === 'image_setup' ? '等待用户选择生成数量并提意见' : status === 'image_generating' ? '正在按用户要求生成图片' : status === 'image_review' ? '等待选择图片或继续提意见' : imageDone ? '图片方向已确认' : '尚未开始' },
     { stage: 'audit', label: '模型生成与检测', state: stage(hasV1, isGenerating), note: isGenerating ? '结构建模与风险检测中' : hasV1 ? 'V1 已生成并通过检测' : '尚未开始' },
     { stage: 'repair', label: '继续优化', state: stage(hasV2, status === 'refine_input' || isRefining), note: hasV2 ? 'V2 优化版已完成' : status === 'refine_input' ? '等待补充修改要求' : '可选步骤' },
     { stage: 'confirm', label: '用户确认', state: stage(isQueued, status === 'review' || status === 'final' || status === 'confirm_print'), note: isQueued ? '已确认打印' : '未确认前不会打印' },
@@ -512,53 +595,123 @@ function IntentInsight() {
   )
 }
 
-function SingleConceptPreview() {
-  return (
-    <div className="mt-3 overflow-hidden rounded-[16px] border border-white bg-white shadow-sm">
-      <div className="h-[205px]"><ConceptArtwork colors={['#7364df', '#79d4ef', '#efeaff']} variant={0} /></div>
-      <div className="flex items-center justify-between gap-3 px-3.5 py-3"><div><div className="text-[12.5px] font-semibold">初稿 · 机械龙 3D 产品渲染</div><div className="text-[10.5px] text-[var(--color-ink-3)]">1536 × 1024 · 生成 11.8 秒 · {DEMO_SESSION.imageJob}</div></div><span className="pill pill-neutral">方向预览</span></div>
-    </div>
-  )
+function useContinuousLoop(enabled: boolean, playing: boolean, itemCount: number, speed = 28) {
+  const railRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const rail = railRef.current
+    if (rail) rail.scrollLeft = 0
+  }, [enabled, itemCount])
+
+  useEffect(() => {
+    if (!enabled || !playing || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let frame = 0
+    let previous = performance.now()
+
+    const move = (now: number) => {
+      const rail = railRef.current
+      const first = rail?.querySelector<HTMLElement>('[data-loop-start="0"]')
+      const second = rail?.querySelector<HTMLElement>('[data-loop-start="1"]')
+      if (rail && first && second) {
+        const loopDistance = second.offsetLeft - first.offsetLeft
+        rail.scrollLeft += ((now - previous) / 1000) * speed
+        if (loopDistance > 0 && rail.scrollLeft >= loopDistance) rail.scrollLeft -= loopDistance
+      }
+      previous = now
+      frame = window.requestAnimationFrame(move)
+    }
+
+    frame = window.requestAnimationFrame(move)
+    return () => window.cancelAnimationFrame(frame)
+  }, [enabled, playing, itemCount, speed])
+
+  return railRef
 }
 
-function ConceptGrid({ selected, onSelect }: { selected: number; onSelect: (value: number) => void }) {
-  return (
-    <div className="mt-3 grid grid-cols-3 gap-2.5 max-[620px]:grid-cols-1">
-      {CONCEPTS.map((concept, index) => (
-        <button key={concept.id} className={cn('group overflow-hidden rounded-[16px] border bg-white text-left transition-all', selected === index ? 'border-[var(--color-coral)] shadow-[0_14px_34px_-24px_rgba(84,70,217,.65)] ring-2 ring-[var(--color-coral-soft)]' : 'border-white hover:-translate-y-0.5 hover:border-[var(--color-line-2)]')} onClick={() => onSelect(index)}>
-          <div className="relative h-[148px]"><ConceptArtwork colors={concept.colors} variant={index + 1} /><span className="absolute left-2 top-2 grid h-7 w-7 place-items-center rounded-full border border-white/80 bg-white/78 font-display text-[11px] font-bold text-[var(--color-coral-deep)] backdrop-blur">{concept.id}</span>{selected === index && <span className="absolute right-2 top-2 pill pill-coral">已选择</span>}</div>
-          <div className="p-3"><div className="text-[12px] font-semibold">{concept.name}</div><div className="mt-1 text-[10px] leading-relaxed text-[var(--color-ink-3)]">{concept.note}</div></div>
-        </button>
-      ))}
-    </div>
-  )
-}
+function ConceptGallery({ images, selectedId, onSelect }: { images: GeneratedDesignImage[]; selectedId: string; onSelect: (value: string) => void }) {
+  const looping = images.length > 2
+  const railRef = useContinuousLoop(looping, true, images.length, 32)
 
-function DesignImageRail({ selected, onSelect }: { selected: number; onSelect: (value: number) => void }) {
-  const images = [
-    { key: 'draft', label: '首轮探索', note: '方向预览', colors: ['#7364df', '#79d4ef', '#efeaff'], variant: 0, conceptIndex: -1 },
-    ...CONCEPTS.map((concept, index) => ({ key: concept.id, label: `${concept.id} · ${concept.name}`, note: index === selected ? '当前选择' : 'AI 生成方案', colors: concept.colors, variant: index + 1, conceptIndex: index })),
-  ]
-  const loopImages = [...images, ...images]
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <div><div className="eyebrow">AI 设计图片</div><div className="mt-1 text-[10.5px] text-[var(--color-ink-3)]">自动浏览本次对话生成的概念图</div></div>
-        <span className="pill pill-neutral">{images.length} 张</span>
+  if (!looping) {
+    return (
+      <div className={cn('mt-3 grid gap-2.5', images.length === 1 ? 'grid-cols-1' : 'grid-cols-2 max-[620px]:grid-cols-1')}>
+        {images.map((image) => <ConceptCard key={image.id} image={image} selected={selectedId === image.id} onSelect={onSelect} />)}
       </div>
-      <div className="design-image-rail rounded-[16px] border border-white bg-gradient-to-br from-[#f3efff] via-white to-[#eaf8ff] py-3 shadow-sm">
-        <div className="design-image-track">
-          {loopImages.map((image, index) => (
-            <button key={`${image.key}-${index}`} className={cn('design-image-card group', image.conceptIndex === selected && image.conceptIndex >= 0 && 'is-active')} onClick={() => image.conceptIndex >= 0 && onSelect(image.conceptIndex)}>
-              <div className="relative h-[94px] overflow-hidden rounded-[11px]">
-                <ConceptArtwork colors={image.colors} variant={image.variant} />
-                <span className="absolute left-2 top-2 rounded-full border border-white/80 bg-white/75 px-2 py-0.5 text-[8.5px] font-semibold text-[var(--color-coral-deep)] backdrop-blur">{image.note}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-2"><span className="truncate text-[10.5px] font-semibold">{image.label}</span>{image.conceptIndex === selected && image.conceptIndex >= 0 && <span className="h-1.5 w-1.5 flex-none rounded-full bg-[var(--color-coral)]" />}</div>
-            </button>
-          ))}
+    )
+  }
+
+  return (
+    <div className="mt-3">
+      <div ref={railRef} className="overflow-hidden pb-2">
+        <div className="flex w-max gap-2.5">
+          {[0, 1].flatMap((copy) => images.map((image, index) => (
+            <ConceptCard
+              key={`${copy}-${image.id}`}
+              image={image}
+              selected={selectedId === image.id}
+              onSelect={onSelect}
+              looping
+              duplicate={copy === 1}
+              loopStart={index === 0 ? copy : undefined}
+            />
+          )))}
         </div>
       </div>
+    </div>
+  )
+}
+
+function ConceptCard({ image, selected, onSelect, looping = false, duplicate = false, loopStart }: { image: GeneratedDesignImage; selected: boolean; onSelect: (value: string) => void; looping?: boolean; duplicate?: boolean; loopStart?: number }) {
+  return (
+    <button
+      className={cn('group overflow-hidden rounded-[16px] border bg-white text-left transition-all', looping && 'w-[230px] flex-none', selected ? 'border-[var(--color-coral)] shadow-[0_14px_34px_-24px_rgba(84,70,217,.65)] ring-2 ring-[var(--color-coral-soft)]' : 'border-white hover:-translate-y-0.5 hover:border-[var(--color-line-2)]')}
+      onClick={() => onSelect(image.id)}
+      aria-hidden={duplicate || undefined}
+      tabIndex={duplicate ? -1 : 0}
+      data-loop-start={loopStart}
+    >
+      <div className="relative h-[148px]"><ConceptArtwork colors={image.colors} variant={image.variant} /><span className="absolute left-2 top-2 rounded-full border border-white/80 bg-white/78 px-2 py-1 text-[9px] font-semibold text-[var(--color-coral-deep)] backdrop-blur">{image.note}</span>{selected && <span className="absolute right-2 top-2 pill pill-coral">已选择</span>}</div>
+      <div className="p-3"><div className="text-[12px] font-semibold">{image.label}</div><div className="mt-1 text-[10px] leading-relaxed text-[var(--color-ink-3)]">{CONCEPTS[image.conceptIndex].note}</div></div>
+    </button>
+  )
+}
+
+function DesignImageRail({ images, selectedId, onSelect }: { images: GeneratedDesignImage[]; selectedId: string; onSelect: (value: string) => void }) {
+  const looping = images.length > 2
+  const [playing, setPlaying] = useState(true)
+  const railRef = useContinuousLoop(looping, playing, images.length, 26)
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div><div className="eyebrow">AI 设计图片</div><div className="mt-1 text-[10.5px] text-[var(--color-ink-3)]">生成后才会出现，超过两张自动循环展示</div></div>
+        <div className="flex items-center gap-1.5">
+          <span className="pill pill-neutral">{images.length} 张</span>
+          {looping && <button className="rounded-full border border-white bg-white px-2.5 py-1 text-[9.5px] font-medium text-[var(--color-ink-2)] shadow-sm" onClick={() => setPlaying((value) => !value)} aria-label={playing ? '暂停循环滚动' : '继续循环滚动'}>{playing ? 'Ⅱ 暂停' : '▶ 循环'}</button>}
+        </div>
+      </div>
+      {images.length === 0
+        ? <div className="grid min-h-[128px] place-items-center rounded-[16px] border border-dashed border-[var(--color-line-2)] bg-gradient-to-br from-[#f7f5ff] to-[#f0f9ff] px-6 text-center"><div><div className="mx-auto grid h-10 w-10 place-items-center rounded-[13px] bg-white text-[18px] text-[var(--color-coral-deep)] shadow-sm">◇</div><div className="mt-2 text-[11.5px] font-semibold">还没有设计图片</div><div className="mt-1 text-[9.5px] text-[var(--color-ink-3)]">在下方对话框输入生成要求后显示</div></div></div>
+        : <div ref={railRef} className="design-image-rail overflow-hidden rounded-[16px] border border-white bg-gradient-to-br from-[#f3efff] via-white to-[#eaf8ff] px-3 py-3 shadow-sm">
+            <div className={cn('design-image-track', !looping && 'justify-center')}>
+              {(looping ? [0, 1] : [0]).flatMap((copy) => images.map((image, index) => (
+                <button
+                  key={`${copy}-${image.id}`}
+                  className={cn('design-image-card group', selectedId === image.id && 'is-active')}
+                  onClick={() => onSelect(image.id)}
+                  aria-hidden={copy === 1 || undefined}
+                  tabIndex={copy === 1 ? -1 : 0}
+                  data-loop-start={index === 0 ? copy : undefined}
+                >
+                  <div className="relative h-[94px] overflow-hidden rounded-[11px]">
+                    <ConceptArtwork colors={image.colors} variant={image.variant} />
+                    <span className="absolute left-2 top-2 rounded-full border border-white/80 bg-white/75 px-2 py-0.5 text-[8.5px] font-semibold text-[var(--color-coral-deep)] backdrop-blur">{image.note}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2"><span className="truncate text-[10.5px] font-semibold">{image.label}</span>{selectedId === image.id && <span className="h-1.5 w-1.5 flex-none rounded-full bg-[var(--color-coral)]" />}</div>
+                </button>
+              )))}
+            </div>
+          </div>}
     </div>
   )
 }
@@ -657,6 +810,10 @@ function ModelVersionItem({ label, note, color, active, onClick }: { label: stri
 function ModelLibraryCard({ label, note, color, active, onClick }: { label: string; note: string; color: string; active?: boolean; onClick: () => void }) { return <button onClick={onClick} className={cn('overflow-hidden rounded-[15px] border text-left transition-all', active ? 'border-[var(--color-coral)]/28 bg-[var(--color-coral-soft)] shadow-sm' : 'border-white bg-white/65 hover:border-[var(--color-line-2)]')}><div className="grid h-[62px] place-items-center bg-gradient-to-br from-[#f2efff] to-[#edf8ff]"><ModelMini color={color} large /></div><div className="flex items-center justify-between gap-1 px-2.5 py-2"><div className="min-w-0"><div className="text-[10.5px] font-semibold">{label}</div><div className="truncate text-[9px] text-[var(--color-ink-3)]">{note}</div></div>{active && <span className="h-2 w-2 flex-none rounded-full bg-[var(--color-coral)]" />}</div></button> }
 function ModelMini({ color, large }: { color: string; large?: boolean }) { return <span className={cn('relative grid flex-none place-items-center rounded-[10px] bg-gradient-to-br from-[#efedff] to-[#e8f7ff]', large ? 'h-11 w-16 bg-transparent' : 'h-9 w-11')}><span className="h-[56%] w-[58%] rotate-[-12deg] rounded-[45%_55%_42%_58%] shadow-sm" style={{ background: `linear-gradient(135deg,${color},#6bc8e9)` }} /><span className="absolute right-[19%] top-[22%] h-1.5 w-1.5 rounded-full bg-[#d8fbff] shadow-[0_0_6px_#7de8ff]" /><span className="absolute bottom-[18%] h-[3px] w-[65%] rounded-full bg-[#74708d]/10" /></span> }
 
+function ModelEmptyState({ compact = false }: { compact?: boolean }) {
+  return <div className={cn('grid place-items-center text-center', compact ? 'min-h-[94px] rounded-[15px] border border-dashed border-[var(--color-line-2)] bg-white/35 px-4' : 'h-full px-8')}><div><div className={cn('mx-auto grid place-items-center rounded-full border border-white bg-white/78 text-[var(--color-ink-3)] shadow-sm', compact ? 'h-9 w-9 text-[15px]' : 'h-14 w-14 text-[22px]')}>◇</div><div className={cn('font-semibold', compact ? 'mt-2 text-[10.5px]' : 'mt-3 text-[13px]')}>暂无可用模型</div><div className={cn('text-[var(--color-ink-3)]', compact ? 'mt-1 text-[9px]' : 'mt-1.5 text-[10.5px]')}>设计图确认并生成成功后，模型版本才会显示</div></div></div>
+}
+
 function AgentMessage({ text, badge, time, children }: { text: string; badge?: string; time?: string; children?: ReactNode }) {
   return <div className="flex items-start gap-2.5"><AgentAvatar /><div className="min-w-0 max-w-[94%] flex-1"><div className="mb-1.5 flex items-center gap-2"><span className="text-[10.5px] font-semibold text-[var(--color-ink-2)]">灵构AI</span><span className="font-mono text-[9px] text-[var(--color-ink-3)]">{time ?? timeNow()}</span></div><div className="chat-agent-bubble rounded-[18px] rounded-tl-[5px] px-4 py-3.5 text-[13px] leading-relaxed text-[var(--color-ink)]">{badge && <div className="mb-2 flex items-center gap-1.5 text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[var(--color-coral-deep)]"><span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-[#806cf6] to-[#55b5ee]" />{badge}</div>}<div>{text}</div>{children}</div></div></div>
 }
@@ -668,8 +825,8 @@ function UserMessage({ children, time }: { children: ReactNode; time?: string })
 function TypingMessage({ label = 'AI 正在输入…' }: { label?: string }) { return <div className="flex items-start gap-2.5"><AgentAvatar /><div><div className="mb-1.5 text-[10.5px] font-semibold text-[var(--color-ink-2)]">灵构AI</div><div className="flex items-center gap-2 rounded-[16px] rounded-tl-[5px] border border-white bg-white px-4 py-3 shadow-sm"><span className="typing-dot" /><span className="typing-dot [animation-delay:.14s]" /><span className="typing-dot [animation-delay:.28s]" /><span className="ml-1 text-[10px] text-[var(--color-ink-3)]">{label}</span></div></div></div> }
 function ConversationDivider({ label }: { label: string }) { return <div className="flex items-center gap-2.5 py-1"><div className="h-px flex-1 bg-[var(--color-line)]" /><span className="font-mono text-[9.5px] uppercase tracking-[0.13em] text-[var(--color-ink-3)]">{label}</span><div className="h-px flex-1 bg-[var(--color-line)]" /></div> }
 
-function GlobalComposer({ value, onChange, onSubmit, disabled }: { value: string; onChange: (value: string) => void; onSubmit: () => void; disabled: boolean }) {
-  return <div className="flex-none border-t border-[var(--color-line)] bg-white/78 px-6 py-3.5 backdrop-blur-xl"><div className="mx-auto max-w-[760px]"><div className="mb-2 flex items-center gap-2 text-[9.5px] text-[var(--color-ink-3)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--color-jade)]" />这是可输入的演示对话框，发送后 AI 会真实回复</div><div className="flex items-center gap-2 rounded-[16px] border border-white bg-white px-3 py-2 shadow-[0_16px_40px_-30px_rgba(53,49,112,.5)] ring-1 ring-[var(--color-line)]"><button className="grid h-8 w-8 place-items-center rounded-[10px] text-[18px] text-[var(--color-ink-3)] hover:bg-[#f3f1ff]" aria-label="上传参考图">＋</button><input value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && onSubmit()} disabled={disabled} className="flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-[var(--color-ink-3)]" placeholder={disabled ? 'AI 正在处理，请稍候…' : '继续和 AI 对话，例如：这些风格我都不喜欢…'} /><button className="btn btn-primary px-3 py-1.5" onClick={onSubmit} disabled={disabled || !value.trim()}>发送</button></div></div></div>
+function GlobalComposer({ value, onChange, onSubmit, disabled, placeholder }: { value: string; onChange: (value: string) => void; onSubmit: () => void; disabled: boolean; placeholder: string }) {
+  return <div className="flex-none border-t border-[var(--color-line)] bg-white/78 px-6 py-3.5 backdrop-blur-xl"><div className="mx-auto max-w-[760px]"><div className="flex items-center gap-2 rounded-[16px] border border-white bg-white px-3 py-2 shadow-[0_16px_40px_-30px_rgba(53,49,112,.5)] ring-1 ring-[var(--color-line)]"><input value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && onSubmit()} disabled={disabled} className="min-w-0 flex-1 bg-transparent px-1 text-[12.5px] outline-none placeholder:text-[var(--color-ink-3)]" placeholder={disabled ? 'AI 正在处理，请稍候…' : placeholder} /><button className="btn btn-primary px-3 py-1.5" onClick={onSubmit} disabled={disabled || !value.trim()}>发送</button></div></div></div>
 }
 
 function DemoDatum({ label, value }: { label: string; value: string }) { return <div className="min-w-0"><div className="text-[9px] text-[var(--color-ink-3)]">{label}</div><div className="truncate font-mono text-[9.5px] font-semibold text-[var(--color-ink-2)]">{value}</div></div> }

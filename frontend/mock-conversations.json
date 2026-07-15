@@ -2,9 +2,9 @@
   "description": "LINGO AI 当前前端原型中的 Mock 对话数据导出",
   "note": "项目中存在两套对话数据：legacy_chat_script 来自 src/data/mock.ts，目前没有被 Workbench 页面直接使用；workbench_conversation 是 src/pages/Workbench.tsx 当前实际渲染的对话流程。",
   "source_files": {
-    "legacy_chat_script": "src/data/mock.ts:187",
-    "current_workbench_conversation": "src/pages/Workbench.tsx:282-389",
-    "input_reply_logic": "src/pages/Workbench.tsx:216-232"
+    "legacy_chat_script": "src/data/mock.ts",
+    "current_workbench_conversation": "src/pages/Workbench.tsx",
+    "input_reply_logic": "src/pages/Workbench.tsx"
   },
   "legacy_chat_script": [
     {
@@ -101,40 +101,38 @@
         "id": "w4",
         "role": "assistant",
         "time": "14:21",
-        "badge": "3D 图片预览",
-        "text": "收到。下面是第一张造型预览，它只用于确认视觉方向，不会直接生成模型或自动打印。你可以接受，也可以让我重新生成三版，或者直接在输入框里补充修改意见。",
+        "badge": "设计图生成",
+        "text": "收到。接下来直接告诉我希望生成的数量和调整要求，生成后再选择一张进入 3D 建模。",
         "content_blocks": [
-          "SingleConceptPreview",
-          "生成模型按钮",
-          "重新生成 3 版按钮"
+          "全局聊天输入框"
         ],
-        "condition": "confirmedStyle 已选择后显示"
+        "condition": "confirmedStyle 已选择且尚未生成设计图"
       },
       {
         "id": "w5",
         "role": "user",
         "time": "14:23",
-        "text": "第一版的轮廓太普通了，不够像真正的 3D 产品渲染。保留蓝紫色，再给我三版差异更大的方案。",
-        "condition": "用户请求重新生成方案后显示"
+        "text": "{submittedImagePrompt}",
+        "condition": "用户在聊天框输入数量和设计要求后显示"
       },
       {
         "id": "w6",
         "role": "assistant",
         "time": "14:23",
-        "badge": "3 版 3D 概念图",
-        "text": "已保留机械龙、蓝紫配色与桌面摆件尺寸，并强化材质、灯光和空间感。三版分别偏战斗、均衡和可爱，你可以点击大图选择。",
+        "badge": "AI 设计图片 · 本轮 {roundImages.length} 张",
+        "text": "设计图已生成。请选择一张作为建模依据，确认后进入 3D 建模。追加生成时，每轮用户消息和对应图片都会保留。",
         "content_blocks": [
-          "ConceptGrid",
-          "选择方案并生成 3D 模型按钮"
+          "ConceptGallery",
+          "选择图片并生成模型按钮"
         ],
-        "condition": "variantRequested 或已经进入生成方案阶段后显示"
+        "condition": "当前轮次的设计图片生成完成后显示"
       },
       {
         "id": "w7",
         "role": "user",
         "time": "14:25",
-        "text": "{variantRequested ? 选择所选概念方案并继续生成可打印的 3D 模型。 : 第一张方向预览可以，就按这一版继续生成可打印的 3D 模型。}",
-        "condition": "用户确认生成模型后显示"
+        "text": "我选择“{modelSourceImage.label}”，继续生成可打印的 3D 模型。",
+        "condition": "用户选择设计图并确认生成模型后显示"
       },
       {
         "id": "w8",
@@ -257,7 +255,31 @@
         "id": "C",
         "name": "模块幼龙",
         "note": "比例更可爱、四足更稳，打印成功率更高"
+      },
+      {
+        "id": "D",
+        "name": "星舰脊甲",
+        "note": "拉长背部装甲，强化飞行器与推进器语言"
+      },
+      {
+        "id": "E",
+        "name": "晶核守卫",
+        "note": "突出透明能量核心与环形护甲结构"
+      },
+      {
+        "id": "F",
+        "name": "轻型侦察龙",
+        "note": "减少厚重装甲，轮廓更轻快，细节更利于打印"
       }
-    ]
+    ],
+    "design_image_logic": {
+      "initial_state": "0 张，AI 设计图片区域显示空状态",
+      "quantity": "用户直接在聊天框中输入生成数量；未写数量时默认生成 1 张",
+      "feedback": "数量和轮廓、配色、材质、打印细节等意见在同一条聊天消息中提交",
+      "accumulation": "右侧 AI 设计图片区累计展示全部轮次结果；聊天区按生成轮次展示对应图片",
+      "scrolling": "累计不超过 2 张时静态展示；大于 2 张时无缝循环滚动，只保留暂停/继续循环控制，不使用左右翻页按钮",
+      "model_visibility": "模型生成成功前，模型版型区、我的模型、尺寸与检测结果均不展示模型内容",
+      "conversation_history": "每次生成请求和对应结果按轮次保留，不会在生成结束后消失或覆盖上一轮消息"
+    }
   }
 }

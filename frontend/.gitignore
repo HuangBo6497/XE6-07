@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation excluded from the frontend submission
+README.md
+LICENSE
