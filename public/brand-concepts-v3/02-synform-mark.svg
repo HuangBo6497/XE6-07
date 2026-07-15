@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="灵犀造物 SYNFORM Logo"><defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3158F5"/><stop offset="1" stop-color="#6B5CFF"/></linearGradient>
+    <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#21C8F6"/><stop offset="1" stop-color="#6B5CFF"/></linearGradient>
+  </defs><g stroke-linejoin="round" stroke-linecap="round"><path d="M88 156c76-86 176-104 247-41 27 24 45 56 54 96-44-42-92-57-143-44-61 16-96 66-105 151-43-42-61-96-53-162Z" fill="url(#g)"/>
+      <path d="M424 356c-76 86-176 104-247 41-27-24-45-56-54-96 44 42 92 57 143 44 61-16 96-66 105-151 43 42 61 96 53 162Z" fill="url(#g2)"/>
+      <path d="m256 204 54 31v62l-54 31-54-31v-62Z" fill="#21C8F6"/>
+      <path d="m256 226 34 20-34 20-34-20Zm0 46 34-20v34l-34 20Z" fill="#fff" opacity=".95"/></g></svg>

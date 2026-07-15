@@ -20,8 +20,8 @@ export default function Projects() {
   return (
     <div className="mx-auto max-w-[1160px] px-6 py-7">
       <SectionHead
-        eyebrow="MY PROJECTS · 创作项目"
-        title={<>我的项目<span className="ml-2 font-mono text-[15px] text-[var(--color-ink-3)] tnum">{PROJECTS.length}</span></>}
+        eyebrow="PROJECTS · 创作项目"
+        title={<>项目<span className="ml-2 font-mono text-[15px] text-[var(--color-ink-3)] tnum">{PROJECTS.length}</span></>}
         right={
           <Link to="/" className="btn btn-primary">
             新建创作

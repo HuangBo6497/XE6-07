@@ -1,0 +1,263 @@
+{
+  "description": "LINGO AI 当前前端原型中的 Mock 对话数据导出",
+  "note": "项目中存在两套对话数据：legacy_chat_script 来自 src/data/mock.ts，目前没有被 Workbench 页面直接使用；workbench_conversation 是 src/pages/Workbench.tsx 当前实际渲染的对话流程。",
+  "source_files": {
+    "legacy_chat_script": "src/data/mock.ts:187",
+    "current_workbench_conversation": "src/pages/Workbench.tsx:282-389",
+    "input_reply_logic": "src/pages/Workbench.tsx:216-232"
+  },
+  "legacy_chat_script": [
+    {
+      "id": "m1",
+      "role": "user",
+      "kind": "text",
+      "text": "我想做一个蓝色的小恐龙钥匙扣"
+    },
+    {
+      "id": "m2",
+      "role": "agent",
+      "kind": "text",
+      "text": "好想法，小恐龙钥匙扣很适合打印。我先跟你确认几个会影响成品的点，你不用懂参数，选一下就行。"
+    },
+    {
+      "id": "m3",
+      "role": "agent",
+      "kind": "options",
+      "text": "想要多大？钥匙扣一般握在手里，太大不好带，太小细节会糊。",
+      "options": [
+        {
+          "label": "小巧（约 5cm）",
+          "hint": "挂钥匙刚好"
+        },
+        {
+          "label": "标准（约 7cm）",
+          "hint": "推荐"
+        },
+        {
+          "label": "摆件（约 12cm）",
+          "hint": "放桌上"
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "role": "user",
+      "kind": "text",
+      "text": "标准就行"
+    },
+    {
+      "id": "m5",
+      "role": "agent",
+      "kind": "intent_card",
+      "text": "我把你的需求整理成了这张卡片，确认后我就去生成概念图。"
+    },
+    {
+      "id": "m6",
+      "role": "agent",
+      "kind": "text",
+      "text": "模型生成好了，我做了一次可打印检测。发现 2 个会导致打印失败的问题和 2 个提醒，别担心，都能一键修复。"
+    },
+    {
+      "id": "m7",
+      "role": "agent",
+      "kind": "audit_summary",
+      "text": "检测摘要"
+    }
+  ],
+  "workbench_conversation": {
+    "session": {
+      "id": "AI-3D-0714-0286",
+      "owner": "林默",
+      "saved_at": "刚刚自动保存",
+      "image_job": "IMG-240714-018",
+      "model_job": "MESH-240714-052"
+    },
+    "messages": [
+      {
+        "id": "w1",
+        "role": "user",
+        "time": "14:20",
+        "text": "我想做一个桌面机械龙摆件，整体要有科技感，但我还没想好具体风格和细节。"
+      },
+      {
+        "id": "w2",
+        "role": "assistant",
+        "time": "14:20",
+        "badge": "AI 需求理解",
+        "text": "我先确认一下：你想做一只适合桌面陈列、能够 3D 打印的机械龙。主体和用途已经明确，现在只差视觉风格与配色。你可以选一个推荐方向，也可以完全按自己的想法描述。",
+        "content_blocks": [
+          "IntentInsight",
+          "StyleGuide"
+        ]
+      },
+      {
+        "id": "w3",
+        "role": "user",
+        "time": "14:21",
+        "text": "我想要“{confirmedStyle}”，主色用蓝紫色，尺寸控制在 15 厘米左右。如果后面效果不对，我还会继续调整。",
+        "condition": "confirmedStyle 已选择后显示"
+      },
+      {
+        "id": "w4",
+        "role": "assistant",
+        "time": "14:21",
+        "badge": "3D 图片预览",
+        "text": "收到。下面是第一张造型预览，它只用于确认视觉方向，不会直接生成模型或自动打印。你可以接受，也可以让我重新生成三版，或者直接在输入框里补充修改意见。",
+        "content_blocks": [
+          "SingleConceptPreview",
+          "生成模型按钮",
+          "重新生成 3 版按钮"
+        ],
+        "condition": "confirmedStyle 已选择后显示"
+      },
+      {
+        "id": "w5",
+        "role": "user",
+        "time": "14:23",
+        "text": "第一版的轮廓太普通了，不够像真正的 3D 产品渲染。保留蓝紫色，再给我三版差异更大的方案。",
+        "condition": "用户请求重新生成方案后显示"
+      },
+      {
+        "id": "w6",
+        "role": "assistant",
+        "time": "14:23",
+        "badge": "3 版 3D 概念图",
+        "text": "已保留机械龙、蓝紫配色与桌面摆件尺寸，并强化材质、灯光和空间感。三版分别偏战斗、均衡和可爱，你可以点击大图选择。",
+        "content_blocks": [
+          "ConceptGrid",
+          "选择方案并生成 3D 模型按钮"
+        ],
+        "condition": "variantRequested 或已经进入生成方案阶段后显示"
+      },
+      {
+        "id": "w7",
+        "role": "user",
+        "time": "14:25",
+        "text": "{variantRequested ? 选择所选概念方案并继续生成可打印的 3D 模型。 : 第一张方向预览可以，就按这一版继续生成可打印的 3D 模型。}",
+        "condition": "用户确认生成模型后显示"
+      },
+      {
+        "id": "w8",
+        "role": "assistant",
+        "time": "14:25",
+        "badge": "模型生成进度",
+        "text_when_generating": "正在把二维概念图转换成可编辑、可打印的模型，并同步执行结构检测。",
+        "text_when_complete": "模型生成流程已完成，每一步都保留了状态记录。",
+        "content_blocks": [
+          "GenerationProgress"
+        ],
+        "condition": "generationRequested 或已进入模型生成阶段后显示"
+      },
+      {
+        "id": "w9",
+        "role": "assistant",
+        "time": "14:28",
+        "badge": "3D 模型结果",
+        "text": "V1 已生成：聊天中展示模型结果，右上方模型版型区也已同步。右侧模型可以按住拖动旋转、滚轮缩放。只有你主动确认后，系统才会准备打印。",
+        "content_blocks": [
+          "ModelResultCard V1",
+          "优化输入框",
+          "打印确认卡片"
+        ],
+        "condition": "V1 已生成且当前不在生成中"
+      },
+      {
+        "id": "w10",
+        "role": "user",
+        "time": "14:31",
+        "text": "{submittedRefineText || refineText}",
+        "condition": "用户提交模型优化要求后显示"
+      },
+      {
+        "id": "w11",
+        "role": "assistant",
+        "time": "14:32",
+        "badge_when_refining": "模型优化进度",
+        "badge_when_complete": "优化模型结果",
+        "text_when_refining": "已收到补充要求，正在基于 {refineSource} 创建新版本，原模型会完整保留。",
+        "text_when_complete": "V2 已完成：主体结构不变，头部、尾巴和科技环底座已按你的要求调整。",
+        "content_blocks": [
+          "GenerationProgress 或 ModelResultCard V2",
+          "优化输入框",
+          "打印确认卡片"
+        ],
+        "condition": "正在优化模型或 V2 已生成后显示"
+      },
+      {
+        "id": "w12",
+        "role": "assistant",
+        "time": "14:35",
+        "badge": "打印任务",
+        "text": "已完成二次确认，{printModel.label} 模型已加入打印队列。现在可以前往打印任务查看排队、设备和材料状态。",
+        "content_blocks": [
+          "打印任务已创建",
+          "查看打印任务按钮"
+        ],
+        "condition": "status === queued"
+      }
+    ],
+    "input_reply_rules": [
+      {
+        "if_contains": "风格",
+        "reply": "可以。你可以直接描述想要的风格、上传参考图，或者点击“换一批风格”。我会保留机械龙和桌面摆件这两个已确认条件。"
+      },
+      {
+        "if_contains": "打印",
+        "reply": "打印不会自动开始。模型生成并通过检测后，我会再让你确认设备、材料和模型版本。"
+      },
+      {
+        "otherwise": true,
+        "reply": "收到，我已经把这条补充记录到当前创作会话。你可以继续描述，也可以使用上方卡片推进下一步。"
+      }
+    ],
+    "style_options": [
+      {
+        "name": "未来机甲",
+        "note": "硬表面装甲、冷色灯带、战术切面",
+        "color": "#7468ef"
+      },
+      {
+        "name": "圆润潮玩",
+        "note": "亲和比例、软边曲面、收藏玩具质感",
+        "color": "#5abbdc"
+      },
+      {
+        "name": "极简几何",
+        "note": "清晰大轮廓、低面结构、适合快速打印",
+        "color": "#8895d7"
+      },
+      {
+        "name": "生物仿生",
+        "note": "有机骨骼、鳞片层次、机械与生命融合",
+        "color": "#65bfae"
+      },
+      {
+        "name": "复古未来",
+        "note": "太空时代曲线、乳白外壳、暖色点缀",
+        "color": "#e29f75"
+      },
+      {
+        "name": "透明晶体",
+        "note": "半透明外壳、发光核心、晶体切割细节",
+        "color": "#78a9ef"
+      }
+    ],
+    "concept_options": [
+      {
+        "id": "A",
+        "name": "装甲先锋",
+        "note": "锐利头冠与外露装甲，战斗感最强"
+      },
+      {
+        "id": "B",
+        "name": "流光核心",
+        "note": "结构均衡、发光胸腔，适合桌面摆件"
+      },
+      {
+        "id": "C",
+        "name": "模块幼龙",
+        "note": "比例更可爱、四足更稳，打印成功率更高"
+      }
+    ]
+  }
+}

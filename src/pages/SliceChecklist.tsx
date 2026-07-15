@@ -73,7 +73,7 @@ export default function SliceChecklist() {
         </div>
 
         {/* slice report */}
-        <div className="eyebrow mb-2">切片报告 · 切片审计已通过</div>
+        <div className="eyebrow mb-2">切片报告 · 切片检测已通过</div>
         <div className="card p-4 grid grid-cols-2 gap-x-8 gap-y-0 max-[560px]:grid-cols-1">
           <DataRow label="层高" value={`${profile.layerHeightMm} mm`} />
           <DataRow label="填充率" value={`${profile.infillPct}%`} />
@@ -90,7 +90,7 @@ export default function SliceChecklist() {
             <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.4" />
             <path d="M7 10h6M10 7v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
-          切片仅在通过可打印审计的模型上运行；几何若有改动，此报告会自动失效并要求重新切片。
+          切片仅在通过可打印检测的模型上运行；几何若有改动，此报告会自动失效并要求重新切片。
         </div>
       </div>
 

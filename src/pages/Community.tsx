@@ -24,8 +24,8 @@ export default function Community() {
   return (
     <div className="mx-auto max-w-[1240px] px-6 py-7">
       <SectionHead
-        eyebrow="COMMUNITY · 模型社区"
-        title="社区模型"
+        eyebrow="COMMUNITY · 灵感与模型"
+        title="社区"
         right={
           <div className="relative">
             <input

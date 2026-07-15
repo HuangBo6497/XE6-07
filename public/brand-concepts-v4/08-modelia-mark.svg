@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="模灵 MODELIA 3D 打印 Logo"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#315EF5"/><stop offset="1" stop-color="#2AC7F2"/></linearGradient><linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#805EFF"/><stop offset="1" stop-color="#2AC7F2"/></linearGradient></defs><g stroke-linejoin="round" stroke-linecap="round"><path d="M58 103c90 89 246 112 367 32 11-7 21-15 31-23-22 82-91 139-178 150-99 12-184-35-220-159Z" fill="url(#g)"/>
+      <path d="m256 197 13 33 34 13-34 13-13 34-13-34-34-13 34-13Z" fill="#805EFF"/>
+      <path d="M116 305v139h62v-80l78 79 78-79v80h62V305l-140 92Z" fill="url(#g2)"/>
+      <path d="m223 282 33 38 33-38-11-42h-44Z" fill="url(#g)"/></g></svg>

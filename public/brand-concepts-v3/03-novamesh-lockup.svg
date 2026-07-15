@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 440" role="img" aria-label="星模引擎 NOVAMESH 品牌组合"><defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#126AF8"/><stop offset="1" stop-color="#17BFEF"/></linearGradient>
+    <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#7168FF"/><stop offset="1" stop-color="#17BFEF"/></linearGradient>
+  </defs>
+  <g transform="translate(34 34) scale(.72)"><path d="M98 300c-20-111 57-213 171-224 72-7 142 24 184 82l-82 21c-28-25-63-37-100-33-66 7-111 65-99 131 11 63 72 103 136 90 40-8 73-34 91-70l77 31c-30 66-89 111-162 123-103 17-198-48-216-151Z" fill="url(#g)"/>
+      <path d="m174 137 187 221-57 49-187-222Z" fill="url(#g2)" opacity=".95"/>
+      <path d="m338 98 13 35 36 12-36 13-13 35-12-35-36-13 36-12Z" fill="#7168FF"/>
+      <path d="m226 214 95 112-47 10-78-93Z" fill="#fff" opacity=".95"/></g>
+  <g transform="translate(465 0)">
+    <text x="0" y="205" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="112" font-weight="750" letter-spacing="5" fill="#14203B">星模引擎</text>
+    <text x="5" y="282" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" letter-spacing="12" fill="#126AF8">NOVAMESH</text>
+    <path d="M5 320H920" stroke="#D8E4F6" stroke-width="3"/>
+    <text x="5" y="367" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="27" letter-spacing="2" fill="#61708D">模型生态 · 持续生成</text>
+  </g></svg>

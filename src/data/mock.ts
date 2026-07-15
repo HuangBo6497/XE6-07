@@ -17,7 +17,7 @@ export const STAGE_META: { stage: PipelineStage; label: string; sub: string }[] 
   { stage: 'input', label: '输入', sub: '文本 / 图片 / 模型' },
   { stage: 'intent', label: '意图澄清', sub: 'Agent 补全需求' },
   { stage: 'generate', label: '生成', sub: '概念图 → 3D 模型' },
-  { stage: 'audit', label: '可打印审计', sub: '几何风险检查' },
+  { stage: 'audit', label: '可打印检测', sub: '几何风险检查' },
   { stage: 'repair', label: '修复', sub: '加厚 / 底座 / 挂孔' },
   { stage: 'slice', label: '切片', sub: '耗时 / 耗材 / 支撑' },
   { stage: 'confirm', label: '打印确认', sub: '人工确认清单' },
@@ -224,13 +224,13 @@ export const CHAT_SCRIPT: ChatMessage[] = [
     id: 'm6',
     role: 'agent',
     kind: 'text',
-    text: '模型生成好了，我做了一次可打印审计。发现 2 个会导致打印失败的问题和 2 个提醒，别担心，都能一键修复。',
+    text: '模型生成好了，我做了一次可打印检测。发现 2 个会导致打印失败的问题和 2 个提醒，别担心，都能一键修复。',
   },
   {
     id: 'm7',
     role: 'agent',
     kind: 'audit_summary',
-    text: '审计摘要',
+    text: '检测摘要',
   },
 ]
 

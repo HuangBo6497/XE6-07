@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 440" role="img" aria-label="维境智造 DIMENOVA 品牌组合"><defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2455FF"/><stop offset="1" stop-color="#735CFF"/></linearGradient>
+    <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#27C8F5"/><stop offset="1" stop-color="#735CFF"/></linearGradient>
+  </defs>
+  <g transform="translate(34 34) scale(.72)"><path d="M254 61c67 5 127 43 160 101l-94 36c-18-27-43-45-76-53-42-10-82 2-119 36 10-66 54-114 129-120Z" fill="url(#g)"/>
+      <path d="M437 303c-29 83-103 143-192 148l-17-99c37-4 67-21 89-51 25-34 30-74 14-120 62 25 98 65 106 122Z" fill="url(#g2)"/>
+      <path d="M111 157c-52 68-61 160-21 237l83-58c-14-34-15-68-1-101 16-39 47-66 92-82-52-42-103-41-153 4Z" fill="#27C8F5"/>
+      <path d="m256 194 65 38v75l-65 38-65-38v-75Z" fill="#fff" opacity=".96"/>
+      <path d="m256 214 46 27-46 27-46-27Zm-46 47 37 21v42l-37-22Zm92 0v41l-37 22v-42Z" fill="#DCE9FF"/></g>
+  <g transform="translate(465 0)">
+    <text x="0" y="205" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="112" font-weight="750" letter-spacing="5" fill="#14203B">维境智造</text>
+    <text x="5" y="282" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" letter-spacing="12" fill="#2455FF">DIMENOVA</text>
+    <path d="M5 320H920" stroke="#D8E4F6" stroke-width="3"/>
+    <text x="5" y="367" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="27" letter-spacing="2" fill="#61708D">打开新维度 · 智能制造</text>
+  </g></svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" role="img">
+      <image href="07-viforge-mark.svg" x="32" y="26" width="308" height="308"/>
+      <text x="390" y="154" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="78" font-weight="700" letter-spacing="4" fill="#222536">维造</text>
+      <text x="394" y="224" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="10" fill="#6148E6">VIFORGE</text>
+      <path d="M394 264h490" stroke="#D9DBE8" stroke-width="3"/>
+    </svg>

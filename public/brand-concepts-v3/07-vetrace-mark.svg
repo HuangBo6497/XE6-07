@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="维迹 VETRACE Logo"><defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#315CF4"/><stop offset="1" stop-color="#24C5EE"/></linearGradient>
+    <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#7666FF"/><stop offset="1" stop-color="#24C5EE"/></linearGradient>
+  </defs><g stroke-linejoin="round" stroke-linecap="round"><path d="M83 113c35-21 74-24 116-9l57 214 57-214c42-15 81-12 116 9L321 431H191Z" fill="url(#g)"/>
+      <path d="M132 145c27-11 51-10 72 3l52 192 52-192c21-13 45-14 72-3L292 397h-72Z" fill="#fff" opacity=".97"/>
+      <path d="M256 318c61 0 109 17 144 51" fill="none" stroke="url(#g2)" stroke-width="26" stroke-linecap="round"/>
+      <circle cx="413" cy="382" r="31" fill="#7666FF"/>
+      <circle cx="413" cy="382" r="11" fill="#fff"/></g></svg>

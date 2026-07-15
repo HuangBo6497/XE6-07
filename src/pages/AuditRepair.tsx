@@ -6,9 +6,9 @@ import { cn } from '@/lib/cn'
 import { AUDIT_ISSUES, REPAIR_OPTIONS, HERO_PROJECT } from '@/data/mock'
 import type { AuditIssue, RepairKind } from '@/data/types'
 
-// 可打印审计与修复 — PRD §15.2. Left: issue list grouped by severity, each
+// 可打印检测与修复 — PRD §15.2. Left: issue list grouped by severity, each
 // expandable with the Agent's plain-language explanation. Right: 3D preview +
-// one-click repairs. Applying repairs re-runs the audit (修复后复审).
+// one-click repairs. Applying repairs re-runs the detection (修复后复检).
 
 const REPAIR_LABEL: Record<RepairKind, string> = {
   thicken: '加厚薄壁',
@@ -54,11 +54,11 @@ export default function AuditRepair() {
       <div className="p-6 max-[1000px]:order-2">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
-            <div className="eyebrow mb-1.5">可打印审计 · MeshReport v0</div>
+            <div className="eyebrow mb-1.5">可打印检测 · MeshReport v0</div>
             <h2 className="text-[20px] leading-tight">{HERO_PROJECT.title}</h2>
             <p className="text-[13px] text-[var(--color-ink-2)] mt-1 max-w-[520px]">
               Agent 已用大白话解释每个问题。修复会保存为新版本，且会
-              <span className="text-[var(--color-ink)] font-medium">自动重新审计</span>，你随时能回退。
+              <span className="text-[var(--color-ink)] font-medium">自动重新检测</span>，你随时能回退。
             </p>
           </div>
         </div>
@@ -169,7 +169,7 @@ export default function AuditRepair() {
           {applied.size > 0 && (
             <div className="flex items-center gap-1.5 text-[12px] text-[var(--color-jade)] mb-2.5 font-mono">
               <span className="dot" style={{ background: 'var(--color-jade)' }} />
-              修复后已自动复审 · 新版本 v3 已存档
+              修复后已自动复检 · 新版本 v3 已存档
             </div>
           )}
           <button
