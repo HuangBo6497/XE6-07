@@ -200,7 +200,6 @@ React 本地状态
 │   ├── index.css            # Tailwind 和全局设计变量
 │   └── main.tsx             # React 应用启动入口
 ├── public/                  # 静态资源
-├── brand-assets/            # 品牌和视觉资源
 ├── mock-conversations.json  # 导出的 Mock 对话数据
 ├── 前端模块介绍.md           # 前端业务模块和当前实现说明
 ├── 前端技术栈方案对比.md      # 技术方案对比和选型说明
