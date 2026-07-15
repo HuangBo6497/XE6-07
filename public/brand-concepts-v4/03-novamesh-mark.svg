@@ -1,4 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="星模引擎 NOVAMESH 3D 打印 Logo"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#087DF7"/><stop offset="1" stop-color="#19BFEF"/></linearGradient><linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#5965FF"/><stop offset="1" stop-color="#19BFEF"/></linearGradient></defs><g stroke-linejoin="round" stroke-linecap="round"><path d="M58 103c90 89 246 112 367 32 11-7 21-15 31-23-22 82-91 139-178 150-99 12-184-35-220-159Z" fill="url(#g)"/>
-      <path d="M237 218h38l18 42-37 32-37-32Z" fill="#5965FF"/>
-      <path d="M185 331h142M168 374h176M151 417h210" fill="none" stroke="url(#g2)" stroke-width="23" stroke-linecap="round"/>
-      <path d="m374 227 10 26 27 10-27 10-10 27-10-27-27-10 27-10Z" fill="url(#g2)"/></g></svg>

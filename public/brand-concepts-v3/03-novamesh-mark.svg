@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="星模引擎 NOVAMESH Logo"><defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#126AF8"/><stop offset="1" stop-color="#17BFEF"/></linearGradient>
-    <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#7168FF"/><stop offset="1" stop-color="#17BFEF"/></linearGradient>
-  </defs><g stroke-linejoin="round" stroke-linecap="round"><path d="M98 300c-20-111 57-213 171-224 72-7 142 24 184 82l-82 21c-28-25-63-37-100-33-66 7-111 65-99 131 11 63 72 103 136 90 40-8 73-34 91-70l77 31c-30 66-89 111-162 123-103 17-198-48-216-151Z" fill="url(#g)"/>
-      <path d="m174 137 187 221-57 49-187-222Z" fill="url(#g2)" opacity=".95"/>
-      <path d="m338 98 13 35 36 12-36 13-13 35-12-35-36-13 36-12Z" fill="#7168FF"/>
-      <path d="m226 214 95 112-47 10-78-93Z" fill="#fff" opacity=".95"/></g></svg>
